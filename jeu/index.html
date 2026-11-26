@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Piano">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Piano · Entraînement</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+  <link rel="stylesheet" href="jeu.css">
+</head>
+<body>
+
+  <!-- ===== Accueil : choix des exercices ===== -->
+  <section id="screen-home" class="screen">
+    <header class="home-head">
+      <h1>Piano</h1>
+      <div class="pills">
+        <span class="pill" title="Jours d'entraînement d'affilée"><span aria-hidden="true">🔥</span> <b id="stat-streak">0</b> j</span>
+        <span class="pill" title="Points d'expérience"><span aria-hidden="true">⭐</span> <b id="stat-xp">0</b> XP</span>
+      </div>
+    </header>
+
+    <main class="home-body">
+      <h2>Exercices</h2>
+      <div id="exercise-list" class="exercise-list"></div>
+
+      <h2>Clés</h2>
+      <div class="chips">
+        <label class="chip"><input type="checkbox" data-clef="sol"><span id="chip-sol"></span></label>
+        <label class="chip"><input type="checkbox" data-clef="fa"><span id="chip-fa"></span></label>
+      </div>
+
+      <h2>Options</h2>
+      <div class="options">
+        <label class="option">
+          <span>Dièses et bémols</span>
+          <input type="checkbox" id="opt-acc"><span class="switch" aria-hidden="true"></span>
+        </label>
+        <label class="option">
+          <span>Son</span>
+          <input type="checkbox" id="opt-sound"><span class="switch" aria-hidden="true"></span>
+        </label>
+      </div>
+
+      <h2>Questions par séance</h2>
+      <div class="segmented" role="radiogroup">
+        <label><input type="radio" name="length" value="10"><span>10</span></label>
+        <label><input type="radio" name="length" value="20"><span>20</span></label>
+        <label><input type="radio" name="length" value="30"><span>30</span></label>
+      </div>
+
+      <p id="install-hint" class="install-hint" hidden>
+        Pour l'avoir comme une appli : menu du navigateur → « Ajouter à l'écran d'accueil ».
+      </p>
+    </main>
+
+    <footer class="bottom-bar">
+      <p id="home-hint" class="home-hint"></p>
+      <button type="button" id="btn-start" class="btn btn-primary">Commencer</button>
+    </footer>
+  </section>
+
+  <!-- ===== Question ===== -->
+  <section id="screen-quiz" class="screen" hidden>
+    <header class="quiz-head">
+      <button type="button" id="btn-quit" class="icon-btn" aria-label="Quitter la séance">✕</button>
+      <div class="progress"><div id="progress-fill" class="progress-fill"></div></div>
+      <div id="combo" class="combo" aria-live="polite"></div>
+    </header>
+
+    <main class="quiz-body">
+      <p id="q-title" class="q-title"></p>
+      <div id="q-visual" class="q-visual"></div>
+      <div id="q-answer" class="q-answer"></div>
+    </main>
+
+    <footer id="quiz-footer" class="bottom-bar">
+      <div id="feedback" class="feedback" hidden>
+        <p id="feedback-title" class="feedback-title"></p>
+        <p id="feedback-detail" class="feedback-detail"></p>
+      </div>
+      <button type="button" id="btn-check" class="btn btn-primary" disabled>Vérifier</button>
+    </footer>
+  </section>
+
+  <!-- ===== Résultats ===== -->
+  <section id="screen-results" class="screen" hidden>
+    <main class="results-body">
+      <div id="results-emoji" class="results-emoji" aria-hidden="true">🎉</div>
+      <h1 id="results-title">Séance terminée !</h1>
+      <div class="tiles">
+        <div class="tile"><span class="tile-label">Précision</span><b id="res-accuracy">0 %</b></div>
+        <div class="tile"><span class="tile-label">XP gagnés</span><b id="res-xp">0</b></div>
+        <div class="tile"><span class="tile-label">Meilleure série</span><b id="res-combo">0</b></div>
+      </div>
+      <div id="res-review" class="review" hidden>
+        <h2>À revoir</h2>
+        <ul id="res-mistakes"></ul>
+      </div>
+    </main>
+    <footer class="bottom-bar stack">
+      <button type="button" id="btn-again" class="btn btn-primary">Rejouer</button>
+      <button type="button" id="btn-home" class="btn btn-secondary">Accueil</button>
+    </footer>
+  </section>
+
+  <script src="../js/glyphes.js"></script>
+  <script src="../js/musique.js"></script>
+  <script src="../js/dessin.js"></script>
+  <script src="exercices.js"></script>
+  <script src="jeu.js"></script>
+</body>
+</html>

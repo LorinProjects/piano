@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cartes de révision — piano</title>
+  <link rel="stylesheet" href="css/cartes.css">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="toolbar-head">
+      <h1>Cartes de révision piano</h1>
+      <p class="summary" id="summary"></p>
+      <a class="game-link" href="jeu/">Jeu d'entraînement →</a>
+    </div>
+
+    <div class="controls">
+      <fieldset>
+        <legend>Exercices</legend>
+        <label><input type="checkbox" data-type="A"><span></span></label>
+        <label><input type="checkbox" data-type="B"><span></span></label>
+        <label><input type="checkbox" data-type="C"><span></span></label>
+        <label><input type="checkbox" data-type="D"><span></span></label>
+        <label><input type="checkbox" data-type="E"><span></span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Clés</legend>
+        <label><input type="checkbox" data-clef="sol"><span>Clé de sol</span></label>
+        <label><input type="checkbox" data-clef="fa"><span>Clé de fa</span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Options</legend>
+        <label><input type="checkbox" id="opt-acc"><span>Dièses et bémols</span></label>
+      </fieldset>
+
+      <div class="actions">
+        <button type="button" id="btn-shuffle">Mélanger</button>
+        <button type="button" id="btn-sort">Trier</button>
+        <button type="button" id="btn-print" class="primary">Imprimer</button>
+      </div>
+    </div>
+
+    <p class="tip">
+      À l'impression : papier A4, échelle 100 % (« taille réelle », pas « ajuster »),
+      cocher « graphiques d'arrière-plan ». Chaque carte mesure 63 × 88 mm et se découpe le long des traits gris.
+    </p>
+  </header>
+
+  <main id="sheets" class="sheets"></main>
+
+  <footer class="credits">
+    Symboles musicaux : police Bravura © Steinberg Media Technologies GmbH, licence SIL Open Font License 1.1.
+  </footer>
+
+  <script src="js/glyphes.js"></script>
+  <script src="js/musique.js"></script>
+  <script src="js/dessin.js"></script>
+  <script src="js/cartes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

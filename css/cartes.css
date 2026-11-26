@@ -1,0 +1,316 @@
+:root {
+  --ink: #1a1a1a;
+  --muted: #6b6b6b;
+  --accent: #d9480f;     /* touche à trouver : reste visible en impression noir et blanc */
+  --answer-bg: #f0f0f0;
+  --cut: #c4c4c4;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+html, body { margin: 0; }
+
+body {
+  font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  background: #e7e7ea;
+}
+
+/* ---------- Barre d'outils (écran uniquement) ---------- */
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 12px 24px 10px;
+  background: #fff;
+  border-bottom: 1px solid #d6d6d6;
+  font-size: 14px;
+}
+
+.toolbar-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+h1 { margin: 0; font-size: 18px; }
+
+.summary { margin: 0; color: var(--muted); }
+
+.game-link { margin-left: auto; font-weight: 600; color: #1c7ed6; text-decoration: none; }
+.game-link:hover { text-decoration: underline; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 24px;
+  margin-top: 10px;
+}
+
+fieldset {
+  display: flex;
+  gap: 4px 14px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
+
+.actions { display: flex; gap: 8px; margin-left: auto; }
+
+button {
+  font: inherit;
+  padding: 6px 14px;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: #f3f3f3; }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+button.primary:hover { background: #333; }
+
+.tip { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+
+.credits { padding: 0 24px 24px; text-align: center; font-size: 11px; color: var(--muted); }
+
+.empty-msg { margin: 48px; text-align: center; color: var(--muted); }
+
+/* ---------- Feuilles A4 ---------- */
+
+.sheets {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: 24px;
+}
+
+.page-label { margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+
+.sheet {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .15);
+}
+
+.grid {
+  position: absolute;
+  left: 10.5mm;   /* (210 - 3 × 63) / 2 */
+  top: 16.5mm;    /* (297 - 3 × 88) / 2 */
+  display: grid;
+  grid-template-columns: repeat(3, 63mm);
+  grid-template-rows: repeat(3, 88mm);
+}
+
+.cutlines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  stroke: var(--cut);
+  stroke-width: .15;
+}
+
+/* ---------- Carte ---------- */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2mm;
+  width: 63mm;
+  height: 88mm;
+  padding: 3mm 3mm 3.4mm;
+  overflow: hidden;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-height: 0;
+}
+
+.label {
+  flex: none;
+  font-size: 6.5pt;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--muted);
+}
+
+.a {
+  justify-content: center;
+  padding: 2mm;
+  border-radius: 2mm;
+  background: var(--answer-bg);
+}
+
+.visual {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.visual > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.name {
+  font-size: 26pt;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+}
+.name-lg { font-size: 36pt; }
+.name-md { font-size: 17pt; }
+.name-sm { font-size: 15pt; margin-top: 1mm; }
+
+.sub {
+  margin-top: 1.2mm;
+  font-size: 7.5pt;
+  text-align: center;
+  color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 1mm;
+  margin-top: .6mm;
+  font-size: 6pt;
+  color: var(--muted);
+}
+
+.dot {
+  display: inline-block;
+  width: 1.5mm;
+  height: 1.5mm;
+  border-radius: 50%;
+  background: #9a9a9a;
+}
+
+.prompt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5mm;
+}
+
+.clef-line {
+  display: flex;
+  align-items: center;
+  gap: 1.5mm;
+  font-size: 9pt;
+  color: var(--muted);
+}
+
+.clef-icon { height: 8mm; width: auto; fill: var(--ink); }
+
+.acc { width: auto; margin-left: .04em; fill: currentColor; }
+
+/* Cartes « note avant / après » */
+.neighbors-q { display: flex; align-items: center; gap: 3mm; }
+
+.blank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10mm;
+  height: 12mm;
+  border: .3mm dashed #9a9a9a;
+  border-radius: 1.5mm;
+  font-size: 16pt;
+  color: #9a9a9a;
+}
+
+.neighbors { display: flex; align-items: flex-end; justify-content: center; gap: 4mm; }
+.neighbor { display: flex; flex-direction: column; align-items: center; }
+.neighbor .name { font-size: 22pt; }
+.neighbor.current .name { font-weight: 400; color: #9a9a9a; }
+
+.tag {
+  font-size: 6pt;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cycle { margin-top: 3mm; font-size: 9pt; word-spacing: .5mm; color: #a0a0a0; }
+.cycle b { color: var(--ink); }
+
+.id {
+  position: absolute;
+  right: 3mm;
+  bottom: 1mm;
+  font-size: 5pt;
+  color: #b0b0b0;
+}
+
+/* ---------- Dessins SVG ---------- */
+
+.staff { fill: var(--ink); }
+.staff-line { stroke: var(--ink); stroke-width: 1; }
+.ledger-line { stroke: var(--ink); stroke-width: 1.25; }
+
+.key-white { fill: #fff; stroke: var(--ink); stroke-width: .7; }
+.key-black { fill: var(--ink); stroke: var(--ink); stroke-width: .7; }
+.keyboard .hl { fill: var(--accent); }
+.middle-c { fill: #9a9a9a; }
+
+/* ---------- Impression ---------- */
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  body { background: #fff; }
+
+  .toolbar,
+  .page-label,
+  .credits { display: none !important; }
+
+  .sheets { display: block; padding: 0; }
+
+  .sheet {
+    box-shadow: none;
+    break-after: page;
+  }
+
+  .sheet-wrap:last-child .sheet { break-after: auto; }
+}
