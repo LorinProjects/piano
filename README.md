@@ -66,11 +66,21 @@ installer sur le téléphone (application web installable, utilisable hors conne
 - Points (XP), série de bonnes réponses, jours d'entraînement d'affilée,
   liste « À revoir » en fin de séance. Tout est enregistré sur le téléphone.
 
-Sur ordinateur, ouvrir `jeu/index.html` suffit pour jouer. Pour l'installer sur
-le téléphone, le site doit être en ligne (en HTTPS), puis :
+**En ligne : https://lorinprojects.github.io/piano/jeu/** (les cartes à imprimer : https://lorinprojects.github.io/piano/)
+
+Pour l'installer sur le téléphone, ouvrir cette adresse puis :
 
 - Android (Chrome) : menu ⋮ → « Installer l'application » ou « Ajouter à l'écran d'accueil » ;
 - iPhone (Safari) : bouton Partager → « Sur l'écran d'accueil ».
+
+Une fois installé, le jeu fonctionne sans connexion. Le site est publié par GitHub Pages
+à chaque `git push` sur la branche `main`.
+
+Sur ordinateur, ouvrir `jeu/index.html` suffit pour jouer.
+
+Version sans hébergement (Android uniquement) : `python3 outils/fichier-unique.py` crée
+`dist/piano-jeu.html`, tout le jeu dans un seul fichier, à copier sur le téléphone et à
+ouvrir avec Chrome. Pas d'icône d'appli, et la progression peut ne pas être sauvegardée.
 
 Après une modification du jeu, changer `CACHE` dans `jeu/sw.js` (ex. `piano-jeu-v2`)
 force les téléphones à tout recharger ; sinon la nouvelle version arrive au lancement suivant.
@@ -88,6 +98,7 @@ force les téléphones à tout recharger ; sinon la nouvelle version arrive au l
 - `jeu/exercices.js`: questions possibles, tirage, vérification des réponses (sans affichage).
 - `jeu/jeu.js`: interactions, sons, progression.
 - `jeu/sw.js`, `jeu/manifest.webmanifest`, `jeu/icones/`: installation sur téléphone et mode hors connexion.
+- `outils/fichier-unique.py`: construit la version « un seul fichier » du jeu (`dist/`).
 
 Le jeu réutilise `js/glyphes.js`, `js/musique.js` et `js/dessin.js` : les dessins
 sont les mêmes que sur les cartes.
