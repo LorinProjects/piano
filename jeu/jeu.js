@@ -6,8 +6,9 @@
 const SETTINGS_KEY = 'piano-jeu-reglages-v1';
 const PROGRESS_KEY = 'piano-jeu-progression-v1';
 const DEFAULT_SETTINGS = {
-  types: { A: true, B: true, C: true, D: true, E: true },
+  types: { A: true, B: true, C: true, D: true, E: true, F: true, G: true, H: true },
   clefs: { sol: true, fa: true },
+  notes: [...ALL_NOTES],
   accidentals: false,
   sound: true,
   length: 10,
@@ -17,12 +18,13 @@ const XP_FIRST_TRY = 10;
 const XP_RETRY = 5;
 const PRAISES = ['Bravo !', 'Excellent !', 'Parfait !', 'Bien joué !', 'Super !'];
 
-// Portée cliquable des exercices « nom → portée » : un peu plus large pour afficher la correction.
+// Portée cliquable (exercices D et G) : un peu plus large pour afficher la correction.
 const PICKER = { width: 110, top: -22, bottom: 62 };
 
 const $ = (selector) => document.querySelector(selector);
 
 let settings = load(SETTINGS_KEY, DEFAULT_SETTINGS);
+if (!Array.isArray(settings.notes) || settings.notes.length !== 7) settings.notes = [...ALL_NOTES];
 let progress = load(PROGRESS_KEY, DEFAULT_PROGRESS);
 let session = null;
 
@@ -56,8 +58,9 @@ function save(key, value) {
 
 let audioCtx = null;
 
-function audio() {
-  if (!settings.sound) return null;
+// force : jouer même si le son est coupé (l'exercice à l'oreille en a besoin).
+function audio(force = false) {
+  if (!settings.sound && !force) return null;
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) return null;
   audioCtx = audioCtx || new Ctx();
@@ -65,8 +68,8 @@ function audio() {
   return audioCtx;
 }
 
-function tone(freq, start, duration, { type = 'sine', volume = 0.2 } = {}) {
-  const ctx = audio();
+function tone(freq, start, duration, { type = 'sine', volume = 0.2, force = false } = {}) {
+  const ctx = audio(force);
   if (!ctx) return;
   const t0 = ctx.currentTime + start;
   const osc = ctx.createOscillator();
@@ -82,11 +85,17 @@ function tone(freq, start, duration, { type = 'sine', volume = 0.2 } = {}) {
 }
 
 // Son proche d'une corde frappée : fondamentale + deux harmoniques qui s'éteignent.
-function playNote(midi, start = 0) {
+function playNote(midi, start = 0, force = false) {
   const f = 440 * 2 ** ((midi - 69) / 12);
-  tone(f, start, 1.6, { type: 'triangle', volume: 0.28 });
-  tone(f * 2, start, 0.9, { volume: 0.07 });
-  tone(f * 3, start, 0.45, { volume: 0.03 });
+  tone(f, start, 1.6, { type: 'triangle', volume: 0.28, force });
+  tone(f * 2, start, 0.9, { volume: 0.07, force });
+  tone(f * 3, start, 0.45, { volume: 0.03, force });
+}
+
+// Exercice à l'oreille : le Do de référence puis la note mystère.
+function playListening(q, which = 'both') {
+  if (which !== 'note') playNote(REFERENCE_MIDI, 0, true);
+  if (which !== 'ref') playNote(q.midi, which === 'both' ? 1 : 0, true);
 }
 
 function playSuccess() {
@@ -123,6 +132,8 @@ function buildHome() {
       + `<input type="checkbox" data-type="${type}"><span class="checkbox" aria-hidden="true"></span>`
       + '</label>';
   }).join('');
+  $('#note-list').innerHTML = NOTE_NAMES.map((name, i) =>
+    `<label class="chip note-chip"><input type="checkbox" data-note="${i}"><span>${name}</span></label>`).join('');
   $('#chip-sol').innerHTML = `${clefIconSVG('sol')}Clé de sol`;
   $('#chip-fa').innerHTML = `${clefIconSVG('fa')}Clé de fa`;
 
@@ -131,6 +142,14 @@ function buildHome() {
   });
   document.querySelectorAll('[data-clef]').forEach((el) => {
     el.addEventListener('change', () => { settings.clefs[el.dataset.clef] = el.checked; settingsChanged(); });
+  });
+  document.querySelectorAll('[data-note]').forEach((el) => {
+    el.addEventListener('change', () => { settings.notes[Number(el.dataset.note)] = el.checked; settingsChanged(); });
+  });
+  $('#btn-all-notes').addEventListener('click', () => {
+    const all = settings.notes.every(Boolean);
+    settings.notes = settings.notes.map(() => !all);
+    settingsChanged();
   });
   $('#opt-acc').addEventListener('change', (e) => { settings.accidentals = e.target.checked; settingsChanged(); });
   $('#opt-sound').addEventListener('change', (e) => { settings.sound = e.target.checked; settingsChanged(); });
@@ -151,6 +170,8 @@ function settingsChanged() {
 function renderHome() {
   document.querySelectorAll('[data-type]').forEach((el) => { el.checked = settings.types[el.dataset.type]; });
   document.querySelectorAll('[data-clef]').forEach((el) => { el.checked = settings.clefs[el.dataset.clef]; });
+  document.querySelectorAll('[data-note]').forEach((el) => { el.checked = settings.notes[Number(el.dataset.note)]; });
+  $('#btn-all-notes').textContent = settings.notes.every(Boolean) ? 'Tout décocher' : 'Tout cocher';
   $('#opt-acc').checked = settings.accidentals;
   $('#opt-sound').checked = settings.sound;
   document.querySelectorAll('[name="length"]').forEach((el) => { el.checked = Number(el.value) === settings.length; });
@@ -162,7 +183,7 @@ function renderHome() {
   $('#btn-start').disabled = pool.length === 0;
   $('#home-hint').textContent = pool.length
     ? ''
-    : 'Choisis au moins un exercice (et une clé pour les exercices avec portée).';
+    : 'Choisis au moins un exercice et une note (et une clé pour les exercices avec portée).';
 }
 
 /* ---------- Séance ---------- */
@@ -184,7 +205,7 @@ function startSession() {
     answer: null,
     checked: false,
   };
-  audio();   // débloque le son sur iPhone (il faut un geste de l'utilisateur)
+  audio(true);   // débloque le son sur téléphone (il faut un geste de l'utilisateur)
   showScreen('quiz');
   nextQuestion();
 }
@@ -211,9 +232,10 @@ function renderQuizHeader() {
 
 /* ---------- Affichage d'une question ---------- */
 
+// Les noms de notes sont mélangés à chaque question : leur ordre ne doit pas donner la réponse.
 function letterKeypad(withAccidentals) {
-  const letters = NOTE_NAMES.map((name, i) =>
-    `<button type="button" class="choice" data-letter="${i}">${name}</button>`).join('');
+  const letters = shuffle([0, 1, 2, 3, 4, 5, 6]).map((i) =>
+    `<button type="button" class="choice" data-letter="${i}">${NOTE_NAMES[i]}</button>`).join('');
   let html = `<div class="keypad">${letters}</div>`;
   if (withAccidentals) {
     html += '<div class="acc-row">'
@@ -239,6 +261,9 @@ function renderPicker(notes) {
   $('#q-answer .picker').innerHTML = staffPicker(session.current.q, notes);
 }
 
+const PICKER_HTML = '<div class="picker"></div><p class="legend">Touche une ligne ou un interligne</p>';
+const MIDDLE_C_LEGEND = '<p class="legend"><span class="dot"></span>do central</p>';
+
 function renderQuestion() {
   const { q } = session.current;
   const visual = $('#q-visual');
@@ -258,13 +283,12 @@ function renderQuestion() {
       break;
     case 'C':
       visual.innerHTML = staffSVG(q.clef, [{ step: q.step, acc: q.acc }]);
-      answer.innerHTML = keyboardSVG({ ...CLEFS[q.clef].keyboard, markMiddleC: true, whiteHeight: 75 })
-        + '<p class="legend"><span class="dot"></span>do central</p>';
+      answer.innerHTML = keyboardSVG({ ...CLEFS[q.clef].keyboard, markMiddleC: true, whiteHeight: 75 }) + MIDDLE_C_LEGEND;
       break;
     case 'D':
       visual.innerHTML = `<div class="prompt-name">${noteNameHTML(q.letter, q.acc)}</div>`
         + `<div class="prompt-clef">${clefIconSVG(q.clef)}${CLEFS[q.clef].label}</div>`;
-      answer.innerHTML = '<div class="picker"></div><p class="legend">Touche une ligne ou un interligne</p>';
+      answer.innerHTML = PICKER_HTML;
       renderPicker([]);
       break;
     case 'E':
@@ -274,6 +298,28 @@ function renderQuestion() {
         + '<button type="button" class="slot" data-slot="1"><small>après</small><span>?</span></button>'
         + '</div>';
       answer.innerHTML = letterKeypad(false);
+      break;
+    case 'F':
+      visual.innerHTML = `<div class="prompt-name">${noteNameHTML(q.letter, q.acc)}</div>`;
+      answer.innerHTML = keyboardSVG({ ...GENERIC_KEYBOARD, whiteHeight: 75 });
+      break;
+    case 'G':
+      visual.innerHTML = keyboardSVG({ ...CLEFS[q.clef].keyboard, highlight: q.midi, markMiddleC: true, whiteHeight: 60 })
+        + MIDDLE_C_LEGEND;
+      answer.innerHTML = PICKER_HTML;
+      renderPicker([]);
+      break;
+    case 'H':
+      visual.innerHTML = '<div class="listen">'
+        + '<button type="button" class="play-btn" data-play="both" aria-label="Réécouter">🔊</button>'
+        + '<div class="listen-actions">'
+        + '<button type="button" class="choice small" data-play="ref">Do de référence</button>'
+        + '<button type="button" class="choice small" data-play="note">Note seule</button>'
+        + '</div>'
+        + '<p class="legend">D\'abord le Do de référence, puis la note mystère</p>'
+        + '</div>';
+      answer.innerHTML = letterKeypad(settings.accidentals);
+      playListening(q);
       break;
     default:
       break;
@@ -286,8 +332,7 @@ function refreshSelection() {
   const { q } = session.current;
   const a = session.answer;
   document.querySelectorAll('#q-answer [data-letter]').forEach((el) => {
-    const letter = Number(el.dataset.letter);
-    el.classList.toggle('selected', q.type !== 'E' && a.letter === letter);
+    el.classList.toggle('selected', q.type !== 'E' && a.letter === Number(el.dataset.letter));
   });
   document.querySelectorAll('#q-answer [data-acc]').forEach((el) => {
     el.classList.toggle('selected', a.acc === Number(el.dataset.acc));
@@ -306,8 +351,17 @@ function refreshSelection() {
 /* ---------- Réponses du joueur ---------- */
 
 function onAnswerTap(event) {
-  if (!session || session.checked) return;
+  if (!session) return;
   const { q } = session.current;
+
+  // Les boutons d'écoute marchent aussi après la correction.
+  const play = event.target.closest('[data-play]');
+  if (play) {
+    playListening(q, play.dataset.play);
+    return;
+  }
+  if (session.checked) return;
+
   const a = session.answer;
   const target = event.target.closest('[data-letter], [data-acc], [data-midi], [data-step], [data-slot]');
   if (!target) return;
@@ -323,13 +377,15 @@ function onAnswerTap(event) {
     }
   } else if (data.acc !== undefined) {
     a.acc = Number(data.acc);
-  } else if (data.midi !== undefined && q.type === 'C') {
+  } else if (data.midi !== undefined && (q.type === 'C' || q.type === 'F')) {
     a.midi = Number(data.midi);
     playNote(a.midi);
   } else if (data.step !== undefined) {
     a.step = Number(data.step);
-    renderPicker([{ step: a.step, acc: q.acc, cls: 'sel', x: 60 }]);
-    playNote(midiOf(CLEFS[q.clef].bottomDia + a.step, q.acc));
+    // Pour une touche à placer (G), la note reste sans altération : afficher ♯ ou ♭ donnerait un indice.
+    const acc = q.type === 'D' ? q.acc : 0;
+    renderPicker([{ step: a.step, acc, cls: 'sel', x: 60 }]);
+    playNote(midiOf(CLEFS[q.clef].bottomDia + a.step, acc));
   } else if (data.slot !== undefined) {
     a.slots[Number(data.slot)] = null;
   }
@@ -338,40 +394,53 @@ function onAnswerTap(event) {
 
 /* ---------- Vérification ---------- */
 
+// Nom d'une touche : une touche noire a deux noms.
+function keyName(q) {
+  return q.black
+    ? BLACK_KEY_SPELLINGS[q.midi % 12].map(([l, acc]) => noteNameHTML(l, acc)).join(' / ')
+    : NOTE_NAMES[q.letter];
+}
+
 function explanation(q) {
   switch (q.type) {
     case 'A': {
       const middleC = q.acc === 0 && q.midi === MIDDLE_C_MIDI ? ' (le do central)' : '';
       return `<b>${noteNameHTML(q.letter, q.acc)}</b> · ${positionLabel(q.step)}${middleC}`;
     }
-    case 'B': {
-      const pc = q.midi % 12;
-      const name = q.black
-        ? BLACK_KEY_SPELLINGS[pc].map(([l, acc]) => noteNameHTML(l, acc)).join(' / ')
-        : NOTE_NAMES[q.letter];
-      return `<b>${name}</b> · ${KEY_HINTS[pc]}`;
-    }
+    case 'B':
+      return `<b>${keyName(q)}</b> · ${KEY_HINTS[q.midi % 12]}`;
     case 'C':
       return `<b>${noteNameHTML(q.letter, q.acc)}</b> · ${positionLabel(q.step)} : la touche en vert`;
     case 'D':
       return `<b>${noteNameHTML(q.letter, q.acc)}</b> · ${q.steps.map(positionLabel).join(' ou ')}`;
     case 'E':
       return `<b>${NOTE_NAMES[noteBefore(q.letter)]}</b> · ${NOTE_NAMES[q.letter]} · <b>${NOTE_NAMES[noteAfter(q.letter)]}</b>`;
+    case 'F':
+      return `<b>${noteNameHTML(q.letter, q.acc)}</b> · ${KEY_HINTS[pitchClass(q.letter, q.acc)]}`;
+    case 'G':
+      return q.spellings.map((s) => `<b>${noteNameHTML(s.letter, s.acc)}</b> (${positionLabel(s.step)})`).join(' ou ');
+    case 'H':
+      return `<b>${keyName(q)}</b> · la touche en orange`;
     default:
       return '';
   }
+}
+
+// Notes vertes (bonnes positions) et rouge (erreur du joueur) sur la portée cliquable.
+function pickerCorrection(rightNotes, wrongStep, wrongAcc, ok) {
+  if (ok) return rightNotes.map((n, i) => ({ ...n, cls: 'right', x: 56 + i * 28 }));
+  return [{ step: wrongStep, acc: wrongAcc, cls: 'wrong', x: 44 },
+    ...rightNotes.map((n, i) => ({ ...n, cls: 'right', x: 70 + i * 26 }))];
 }
 
 // Colore les réponses : en vert ce qui était juste, en rouge l'erreur du joueur.
 function showCorrection(q, a, ok) {
   const mark = (selector, cls) => document.querySelectorAll(selector).forEach((el) => el.classList.add(cls));
 
-  if (q.type === 'A' || q.type === 'B') {
+  if (q.type === 'A' || q.type === 'B' || q.type === 'H') {
     if (!q.black || ok) {
-      const letter = ok ? a.letter : q.letter;
-      const acc = ok ? a.acc : q.acc;
-      mark(`#q-answer [data-letter="${letter}"]`, 'correct');
-      mark(`#q-answer [data-acc="${acc}"]`, 'correct');
+      mark(`#q-answer [data-letter="${ok ? a.letter : q.letter}"]`, 'correct');
+      mark(`#q-answer [data-acc="${ok ? a.acc : q.acc}"]`, 'correct');
     }
     if (!ok) {
       if (a.letter !== (q.black ? null : q.letter)) mark(`#q-answer [data-letter="${a.letter}"]`, 'wrong');
@@ -382,12 +451,18 @@ function showCorrection(q, a, ok) {
     mark(`#q-answer [data-midi="${q.midi}"]`, 'right');
     if (!ok) mark(`#q-answer [data-midi="${a.midi}"]`, 'wrong');
   }
+  if (q.type === 'F') {
+    const pc = pitchClass(q.letter, q.acc);
+    document.querySelectorAll('#q-answer [data-midi]').forEach((el) => {
+      if (Number(el.dataset.midi) % 12 === pc) el.classList.add('right');
+    });
+    if (!ok) mark(`#q-answer [data-midi="${a.midi}"]`, 'wrong');
+  }
   if (q.type === 'D') {
-    const notes = ok
-      ? q.steps.map((step, i) => ({ step, acc: q.acc, cls: 'right', x: 56 + i * 28 }))
-      : [{ step: a.step, acc: q.acc, cls: 'wrong', x: 44 },
-        ...q.steps.map((step, i) => ({ step, acc: q.acc, cls: 'right', x: 70 + i * 26 }))];
-    renderPicker(notes);
+    renderPicker(pickerCorrection(q.steps.map((step) => ({ step, acc: q.acc })), a.step, q.acc, ok));
+  }
+  if (q.type === 'G') {
+    renderPicker(pickerCorrection(q.spellings.map(({ step, acc }) => ({ step, acc })), a.step, 0, ok));
   }
   if (q.type === 'E') {
     const expected = [noteBefore(q.letter), noteAfter(q.letter)];
@@ -395,6 +470,10 @@ function showCorrection(q, a, ok) {
       const i = Number(el.dataset.slot);
       el.classList.add(a.slots[i] === expected[i] ? 'correct' : 'wrong');
     });
+  }
+  if (q.type === 'H') {
+    $('#q-visual').insertAdjacentHTML('beforeend',
+      `<div class="reveal">${keyboardSVG({ ...LISTENING_KEYBOARD, highlight: q.midi, markMiddleC: true })}</div>`);
   }
   // Les réponses restent affichées mais ne réagissent plus (voir session.checked).
   $('#q-answer').classList.add('locked');
@@ -427,7 +506,7 @@ function checkCurrent() {
     playError();
     if (navigator.vibrate) navigator.vibrate(120);
   }
-  questionSound(q, a).forEach((midi, i) => playNote(midi, 0.35 + i * 0.35));
+  questionSound(q, a).forEach((midi, i) => playNote(midi, 0.35 + i * 0.35, q.type === 'H'));
 
   showCorrection(q, a, ok);
   $('#feedback-title').textContent = ok ? PRAISES[Math.floor(Math.random() * PRAISES.length)] : 'Pas tout à fait…';
@@ -439,7 +518,7 @@ function checkCurrent() {
 function renderFooter(ok) {
   const footer = $('#quiz-footer');
   const button = $('#btn-check');
-  const checked = session.checked;
+  const { checked } = session;
   footer.classList.toggle('ok', checked && ok);
   footer.classList.toggle('ko', checked && !ok);
   $('#feedback').hidden = !checked;

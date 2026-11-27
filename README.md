@@ -54,12 +54,17 @@ Le numéro en bas à droite de chaque carte (A01, B07…) permet de les ranger.
 Le dossier `jeu/` contient une petite appli d'entraînement façon Duolingo, à
 installer sur le téléphone (application web installable, utilisable hors connexion).
 
-- On coche les exercices (A à E), les clés, les options, puis « Commencer ».
+- On coche les exercices, les clés, les **notes** à travailler (Do … Si), les options,
+  puis « Commencer ».
 - Seule la question est affichée ; on répond en touchant :
-  - A, B : le nom de la note (et dièse / bémol si l'option est activée) ;
-  - C : la touche sur le clavier ;
-  - D : la ligne ou l'interligne sur la portée ;
-  - E : la note d'avant puis celle d'après.
+  - A (portée → nom), B (clavier → nom), H (son → nom) : le nom de la note
+    (et dièse / bémol si l'option est activée). Les noms sont **mélangés** à chaque question ;
+  - C (portée → clavier), F (nom → clavier) : la touche sur le clavier
+    (pour F, n'importe quelle touche du bon nom) ;
+  - D (nom → portée), G (clavier → portée) : la ligne ou l'interligne sur la portée ;
+  - E (avant / après) : la note d'avant puis celle d'après.
+- H se joue à l'oreille : un Do de référence (le do central), puis la note mystère,
+  dans l'octave au-dessus. Il joue le son même si l'option « Son » est coupée.
 - « Vérifier » corrige en vert / rouge, joue la note et explique la réponse.
 - Une question ratée revient en fin de séance. Les questions souvent ratées
   sortent plus souvent les fois suivantes.

@@ -7,38 +7,24 @@
 'use strict';
 
 const EXERCISES = {
-  A: {
-    label: 'Portée → nom',
-    desc: 'Lis la note sur la portée',
-    title: 'Quelle est cette note ?',
-    usesClef: true,
-  },
-  B: {
-    label: 'Clavier → nom',
-    desc: 'Nomme la touche colorée',
-    title: 'Quelle est cette touche ?',
-    usesClef: false,
-  },
-  C: {
-    label: 'Portée → clavier',
-    desc: 'Touche la note sur le clavier',
-    title: 'Touche cette note sur le clavier',
-    usesClef: true,
-  },
-  D: {
-    label: 'Nom → portée',
-    desc: 'Place la note sur la portée',
-    title: 'Place cette note sur la portée',
-    usesClef: true,
-  },
-  E: {
-    label: 'Note avant / après',
-    desc: "Révise l'ordre des notes",
-    title: 'Quelle note vient avant ? Et après ?',
-    usesClef: false,
-  },
+  A: { label: 'Portée → nom', desc: 'Lis la note sur la portée', title: 'Quelle est cette note ?', usesClef: true },
+  B: { label: 'Clavier → nom', desc: 'Nomme la touche colorée', title: 'Quelle est cette touche ?', usesClef: false },
+  C: { label: 'Portée → clavier', desc: 'Touche la note sur le clavier', title: 'Touche cette note sur le clavier', usesClef: true },
+  D: { label: 'Nom → portée', desc: 'Place la note sur la portée', title: 'Place cette note sur la portée', usesClef: true },
+  E: { label: 'Note avant / après', desc: "Révise l'ordre des notes", title: 'Quelle note vient avant ? Et après ?', usesClef: false },
+  F: { label: 'Nom → clavier', desc: 'Trouve la touche à partir du nom', title: 'Où est cette note sur le clavier ?', usesClef: false },
+  G: { label: 'Clavier → portée', desc: 'Place la touche colorée sur la portée', title: 'Place cette touche sur la portée', usesClef: true },
+  H: { label: 'Son → nom', desc: "Reconnais la note à l'oreille", title: 'Quelle note entends-tu ?', usesClef: false },
 };
-const EXERCISE_ORDER = ['A', 'B', 'C', 'D', 'E'];
+const EXERCISE_ORDER = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+// Exercice à l'oreille : un Do de référence (le do central), puis une note de l'octave au-dessus.
+const REFERENCE_MIDI = MIDDLE_C_MIDI;
+const LISTENING_RANGE = { from: 4 * 7, to: 4 * 7 + 6 };
+// Clavier affiché pour montrer la réponse de l'exercice à l'oreille (do central → Do aigu).
+const LISTENING_KEYBOARD = { from: 4 * 7, to: 5 * 7 };
+
+const ALL_NOTES = [true, true, true, true, true, true, true];
 
 function pitchClass(letter, acc) {
   return (((SEMITONES[letter] + acc) % 12) + 12) % 12;
@@ -52,11 +38,37 @@ function noteAfter(letter) {
   return (letter + 1) % 7;
 }
 
+function shuffle(list, rand = Math.random) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+// Touches d'un clavier (blanches, et noires si les altérations sont activées).
+// Une touche noire compte pour ses deux noms (Do♯ / Ré♭ → Do et Ré).
+function keyQuestions(type, { from, to }, accidentals) {
+  const list = [];
+  for (let dia = from; dia <= to; dia++) {
+    const letter = letterOf(dia);
+    const midi = midiOf(dia);
+    list.push({ id: `${type}-${midi}`, type, midi, letter, acc: 0, black: false, letters: [letter] });
+    if (accidentals && dia < to && [0, 1, 3, 4, 5].includes(letter)) {
+      const letters = BLACK_KEY_SPELLINGS[(midi + 1) % 12].map(([l]) => l);
+      list.push({ id: `${type}-${midi + 1}`, type, midi: midi + 1, letter: null, acc: null, black: true, letters });
+    }
+  }
+  return list;
+}
+
 /*
  * Toutes les questions possibles pour les réglages choisis.
- * Chaque question a un identifiant stable (pour retenir les erreurs d'une séance à l'autre).
+ * Chaque question a un identifiant stable (pour retenir les erreurs d'une séance à l'autre)
+ * et la liste des noms de notes qu'elle concerne (pour le filtre « Notes »).
  */
-function buildPool({ types, clefs, accidentals }) {
+function buildPool({ types, clefs, accidentals, notes = ALL_NOTES }) {
   const pool = [];
   const accsFor = (letter) => [0, ...(accidentals ? accidentalsFor(letter) : [])];
   const clefKeys = Object.keys(CLEFS).filter((key) => clefs[key]);
@@ -76,6 +88,7 @@ function buildPool({ types, clefs, accidentals }) {
             letter,
             acc,
             midi: midiOf(dia, acc),
+            letters: [letter],
           });
         }
       }
@@ -90,31 +103,43 @@ function buildPool({ types, clefs, accidentals }) {
           if (letterOf(clef.bottomDia + step) === letter) steps.push(step);
         }
         for (const acc of accsFor(letter)) {
-          pool.push({ id: `D-${clefKey}-${letter}-${acc}`, type: 'D', clef: clefKey, letter, acc, steps });
+          pool.push({ id: `D-${clefKey}-${letter}-${acc}`, type: 'D', clef: clefKey, letter, acc, steps, letters: [letter] });
         }
       }
     }
+
+    // Clavier → portée : une touche peut s'écrire de deux façons (Fa♯ ou Sol♭), les deux sont justes.
+    if (types.G) {
+      const spellingsByMidi = new Map();
+      for (let step = 0; step < STAFF_STEPS; step++) {
+        const dia = clef.bottomDia + step;
+        const letter = letterOf(dia);
+        for (const acc of accsFor(letter)) {
+          const midi = midiOf(dia, acc);
+          if (!spellingsByMidi.has(midi)) spellingsByMidi.set(midi, []);
+          spellingsByMidi.get(midi).push({ step, letter, acc });
+        }
+      }
+      [...spellingsByMidi.entries()].sort((a, b) => a[0] - b[0]).forEach(([midi, spellings]) => {
+        const letters = [...new Set(spellings.map((s) => s.letter))];
+        pool.push({ id: `G-${clefKey}-${midi}`, type: 'G', clef: clefKey, midi, spellings, letters });
+      });
+    }
   }
 
-  if (types.B) {
-    const { from, to } = GENERIC_KEYBOARD;
-    for (let dia = from; dia <= to; dia++) {
-      const letter = letterOf(dia);
-      const midi = midiOf(dia);
-      pool.push({ id: `B-${midi}`, type: 'B', letter, acc: 0, midi, black: false });
-      if (accidentals && dia < to && [0, 1, 3, 4, 5].includes(letter)) {
-        pool.push({ id: `B-${midi + 1}`, type: 'B', letter: null, acc: null, midi: midi + 1, black: true });
+  if (types.B) pool.push(...keyQuestions('B', GENERIC_KEYBOARD, accidentals));
+  if (types.H) pool.push(...keyQuestions('H', LISTENING_RANGE, accidentals));
+
+  for (let letter = 0; letter < 7; letter++) {
+    if (types.E) pool.push({ id: `E-${letter}`, type: 'E', letter, letters: [letter] });
+    if (types.F) {
+      for (const acc of accsFor(letter)) {
+        pool.push({ id: `F-${letter}-${acc}`, type: 'F', letter, acc, letters: [letter] });
       }
     }
   }
 
-  if (types.E) {
-    for (let letter = 0; letter < 7; letter++) {
-      pool.push({ id: `E-${letter}`, type: 'E', letter });
-    }
-  }
-
-  return pool;
+  return pool.filter((q) => q.letters.some((letter) => notes[letter]));
 }
 
 /*
@@ -156,9 +181,12 @@ function emptyAnswer() {
 function isAnswerComplete(q, a) {
   switch (q.type) {
     case 'A':
-    case 'B': return a.letter !== null;
-    case 'C': return a.midi !== null;
-    case 'D': return a.step !== null;
+    case 'B':
+    case 'H': return a.letter !== null;
+    case 'C':
+    case 'F': return a.midi !== null;
+    case 'D':
+    case 'G': return a.step !== null;
     case 'E': return a.slots[0] !== null && a.slots[1] !== null;
     default: return false;
   }
@@ -168,21 +196,27 @@ function checkAnswer(q, a) {
   switch (q.type) {
     // Sur la portée, l'orthographe compte : Do♯ écrit n'est pas Ré♭.
     case 'A': return a.letter === q.letter && a.acc === q.acc;
-    // Sur le clavier, une touche noire a deux noms : les deux sont acceptés.
-    case 'B': return a.letter !== null && pitchClass(a.letter, a.acc) === q.midi % 12;
+    // Une touche (vue ou entendue) a parfois deux noms : les deux sont acceptés.
+    case 'B':
+    case 'H': return a.letter !== null && pitchClass(a.letter, a.acc) === q.midi % 12;
     case 'C': return a.midi === q.midi;
     case 'D': return q.steps.includes(a.step);
     case 'E': return a.slots[0] === noteBefore(q.letter) && a.slots[1] === noteAfter(q.letter);
+    // N'importe quelle touche du bon nom, quelle que soit l'octave.
+    case 'F': return a.midi !== null && a.midi % 12 === pitchClass(q.letter, q.acc);
+    case 'G': return q.spellings.some((s) => s.step === a.step);
     default: return false;
   }
 }
 
-// Note à faire entendre après la réponse (numéros MIDI, joués l'un après l'autre).
+// Notes à faire entendre après la réponse (numéros MIDI, joués l'un après l'autre).
 function questionSound(q, a) {
   switch (q.type) {
     case 'A':
     case 'B':
     case 'C':
+    case 'G':
+    case 'H':
       return [q.midi];
     case 'D': {
       const step = q.steps.includes(a.step) ? a.step : q.steps[0];
@@ -192,6 +226,8 @@ function questionSound(q, a) {
       const dia = 4 * 7 + q.letter;
       return [midiOf(dia - 1), midiOf(dia), midiOf(dia + 1)];
     }
+    case 'F':
+      return [checkAnswer(q, a) ? a.midi : midiOf(GENERIC_KEYBOARD.from) + pitchClass(q.letter, q.acc)];
     default:
       return [];
   }

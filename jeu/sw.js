@@ -4,7 +4,7 @@
  * la version en cache et on la met à jour en arrière-plan (la nouvelle version
  * est utilisée au lancement suivant).
  */
-const CACHE = 'piano-jeu-v1';
+const CACHE = 'piano-jeu-v2';
 const ASSETS = [
   './',
   'index.html',

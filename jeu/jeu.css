@@ -148,6 +148,9 @@ h2 {
 .ex-C { background: #7048e8; }
 .ex-D { background: #0ca678; }
 .ex-E { background: #f08c00; }
+.ex-F { background: #d6336c; }
+.ex-G { background: #1098ad; }
+.ex-H { background: #ae3ec9; }
 
 .ex-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .ex-title { font-size: 17px; font-weight: 700; }
@@ -196,6 +199,20 @@ input:checked + .checkbox::after {
   color: var(--blue-dark);
   box-shadow: 0 2px 0 var(--blue);
 }
+
+.section-head { display: flex; align-items: baseline; justify-content: space-between; }
+.link-btn {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.note-chips { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.note-chip span { padding: 10px 0; font-size: 15px; }
 
 .options { border: 2px solid var(--line); border-radius: 16px; overflow: hidden; }
 .option {
@@ -354,6 +371,25 @@ input:checked + .switch::after { transform: translateX(20px); }
 .prompt-name { font-size: 64px; font-weight: 800; line-height: 1.1; }
 .prompt-clef { display: flex; align-items: center; gap: 8px; font-size: 17px; color: var(--muted); }
 .prompt-clef .clef-icon { width: auto; height: 34px; }
+
+/* Son → nom */
+.listen { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 10px 0; }
+.play-btn {
+  width: 104px;
+  height: 104px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 5px 0 var(--blue-dark);
+  font-size: 44px;
+  cursor: pointer;
+}
+.play-btn:active { transform: translateY(5px); box-shadow: none; }
+.listen-actions { display: flex; gap: 10px; }
+.listen-actions .choice { padding: 10px 14px; }
+.listen .legend { margin: 0; }
+.reveal { width: 100%; margin-top: 14px; }
+.reveal .keyboard { display: block; width: 100%; }
 
 /* Note avant / après */
 .slots { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 18px 0; }
